@@ -1,0 +1,4 @@
+# Dependencies for running the self-verification tests in tests/.
+globus-compute-sdk>=4.12     # test_sdk_symbols.py
+jinja2>=3.1                  # test_render_configs.py
+pyyaml>=6.0                  # test_render_configs.py, test_skill_format.py

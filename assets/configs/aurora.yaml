@@ -1,0 +1,42 @@
+# ============================================================================
+# Aurora (ALCF) Globus Compute endpoint config — DRAFT, NOT YET VALIDATED
+# ============================================================================
+# There is no public Aurora example in the globus-compute repo (verified
+# June 2026). This draft composes:
+#   - the Globus half (engine/provider/launcher/address/blocks structure)
+#     from the upstream polaris.yaml (same facility, scheduler, fabric family)
+#   - the scheduler half (account/queue/filesystems/modules/cpus/gpus)
+#     from ALCF Aurora documentation (https://docs.alcf.anl.gov/aurora/)
+# Lines marked VERIFY need confirmation against ALCF docs/support or a
+# running Aurora endpoint before production use.
+#
+# File destination: ~/.globus_compute/<endpoint-name>/user_config_template.yaml.j2
+# ============================================================================
+engine:
+  type: GlobusComputeEngine
+  max_workers_per_node: 6              # 1 worker per PVC GPU device (VERIFY: 6 devices vs 12 tiles)
+  available_accelerators: 6            # pin each worker to one GPU (VERIFY tile/device granularity)
+  address:
+    type: address_by_interface
+    ifname: hsn0                       # VERIFY: Aurora Slingshot interface name (Aurora has 8 NICs/node)
+  provider:
+    type: PBSProProvider               # Aurora uses PBS
+    launcher:
+      type: MpiExecLauncher            # mpiexec on Aurora — NOT srun
+      bind_cmd: --cpu-bind
+      overrides: --depth=104 --ppn 1   # 1 manager per node, 104 cores (2x52) (VERIFY depth)
+    account: {{ AURORA_PROJECT }}      # your ALCF project (-A)
+    queue: debug                       # debug | prod | prod-large
+    cpus_per_node: 104                 # 2 sockets x 52 cores
+    select_options: ngpus=6
+    scheduler_options: "#PBS -l filesystems=home:flare"   # MANDATORY on Aurora; list every FS used
+    # Bare variable (Polaris pattern): the endpoint JSON-quotes user strings, so do
+    # NOT interpolate a variable inside another quoted string — that produces
+    # invalid YAML. Aurora needs the oneAPI modules; include them in the value you
+    # pass, e.g. "module use /soft/modulefiles; module load oneapi; conda activate my-env"
+    worker_init: {{ WORKER_INIT }}
+    walltime: 01:00:00
+    nodes_per_block: 1
+    init_blocks: 0                     # allocation safety — never raise
+    min_blocks: 0
+    max_blocks: 2

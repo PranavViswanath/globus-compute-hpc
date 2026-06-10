@@ -1,0 +1,41 @@
+engine:
+    type: GlobusComputeEngine
+    worker_debug: False
+
+    address:
+        type: address_by_interface
+        ifname: hsn0
+
+    provider:
+        type: SlurmProvider
+        partition: debug
+
+        # We request all hyperthreads on a node.
+        # GPU nodes have 128 threads, CPU nodes have 256 threads
+        launcher:
+            type: SrunLauncher
+            overrides: -c 128
+
+        # string to prepend to #SBATCH blocks in the submit
+        # script to the scheduler
+        # For GPUs in the debug qos eg: "#SBATCH --constraint=gpu\n#SBATCH --gpus-per-node=4"
+        scheduler_options: {{ OPTIONS }}
+
+        # Your NERSC account, eg: "m0000"
+        account: {{ NERSC_ACCOUNT }}
+
+        # Command to be run before starting a worker
+        # e.g., "module load Anaconda; source activate parsl_env"
+        worker_init: {{ COMMAND }}
+
+        # increase the command timeouts
+        cmd_timeout: 120
+
+        # Scale between 0-1 blocks with 2 nodes per block
+        nodes_per_block: 2
+        init_blocks: 0
+        min_blocks: 0
+        max_blocks: 1
+
+        # Hold blocks for 10 minutes
+        walltime: 00:10:00
